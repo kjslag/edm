@@ -27,6 +27,7 @@ import tempfile
 import urllib
 import urllib.request
 import uuid
+import torch
 
 from distutils.util import strtobool
 from typing import Any, List, Tuple, Union, Optional
@@ -134,6 +135,11 @@ def make_cache_dir_path(*paths: str) -> str:
 # Small util functions
 # ------------------------------------------------------------------------------------------
 
+def default_device():
+    return torch.device(
+        'cuda' if torch.cuda.is_available() else
+        'mps'  if torch.backends.mps.is_available() else
+        'cpu' )
 
 def format_time(seconds: Union[int, float]) -> str:
     """Convert the seconds to human readable string with days, hours, minutes and seconds."""
