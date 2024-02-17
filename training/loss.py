@@ -95,17 +95,29 @@ class DEDMLoss:
     def __call__(self, net, images, labels=None, augment_pipe=None):
         B = images.shape[0]
         assert B % 2 == 0
-        images = images[:B//2].tile(2,1,1,1)
+        images = images[:B//2]
         if self.use_log_uniform:
             rnd_uniform = torch.rand([B//2, 1, 1, 1], device=images.device)
             sigma = self.sigma_min * ((self.sigma_max / self.sigma_min) ** rnd_uniform)
         else:
             rnd_normal = torch.randn([B//2, 1, 1, 1], device=images.device)
             sigma = (rnd_normal * self.P_std + self.P_mean).exp()
-        sigma = torch.cat([sigma, -sigma], dim=0)
         weight = (sigma ** 2 + self.sigma_data ** 2) / (sigma * self.sigma_data) ** 2
         y, augment_labels = augment_pipe(images) if augment_pipe is not None else (images, None)
         n = torch.randn_like(y) * sigma
+
+        y = y.tile(2,1,1,1)
+        sigma = sigma.tile(2,1,1,1)
+        n = n.tile(2,1,1,1)
+        if labels is not None:
+            assert labels.shape[0] == B
+            assert labels.ndim == 2
+            labels = labels[:B//2].tile(2,1)
+        if augment_labels is not None:
+            assert labels.augment_labels[0] == B//2
+            assert labels.ndim == 2
+            augment_labels = augment_labels.tile(2,1)
+
         D_yn = net(y + n, sigma, labels, augment_labels=augment_labels)
         loss = weight * ((D_yn - y) ** 2)
         return loss
