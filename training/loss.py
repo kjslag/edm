@@ -93,11 +93,14 @@ class DEDMLoss:
         self.sigma_max = sigma_max
 
     def __call__(self, net, images, labels=None, augment_pipe=None):
+        B = images.shape[0]
+        assert B % 2 == 0
+        images = images[:B//2].tile(2,1,1,1)
         if self.use_log_uniform:
-            rnd_uniform = torch.rand([images.shape[0]//2, 1, 1, 1], device=images.device)
+            rnd_uniform = torch.rand([B//2, 1, 1, 1], device=images.device)
             sigma = self.sigma_min * ((self.sigma_max / self.sigma_min) ** rnd_uniform)
         else:
-            rnd_normal = torch.randn([images.shape[0]//2, 1, 1, 1], device=images.device)
+            rnd_normal = torch.randn([B//2, 1, 1, 1], device=images.device)
             sigma = (rnd_normal * self.P_std + self.P_mean).exp()
         sigma = torch.cat([sigma, -sigma], dim=0)
         weight = (sigma ** 2 + self.sigma_data ** 2) / (sigma * self.sigma_data) ** 2
