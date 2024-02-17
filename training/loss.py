@@ -114,8 +114,8 @@ class DEDMLoss:
             assert labels.ndim == 2
             labels = labels[:B//2].tile(2,1)
         if augment_labels is not None:
-            assert labels.augment_labels[0] == B//2
-            assert labels.ndim == 2
+            assert augment_labels.shape[0] == B//2
+            assert augment_labels.ndim == 2
             augment_labels = augment_labels.tile(2,1)
 
         D_yn = net(y + n, sigma, labels, augment_labels=augment_labels)
