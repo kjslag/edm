@@ -671,3 +671,14 @@ class EDMPrecond(torch.nn.Module):
         return torch.as_tensor(sigma)
 
 #----------------------------------------------------------------------------
+
+# @persistence.persistent_class
+# class DEDMPrecond(EDMPrecond):
+#     def __init__(self, *args, **kwargs):
+#         super().__init__(*args, **kwargs)
+
+#     def forward(self, *args, **kwargs):
+#         D_x = super().forward(*args, **kwargs)
+#         return D_x
+
+#----------------------------------------------------------------------------

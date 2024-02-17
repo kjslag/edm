@@ -45,10 +45,9 @@ def parse_int_list(s):
 @click.option('--data',          help='Path to the dataset', metavar='ZIP|DIR',                     type=str, required=True)
 @click.option('--cond',          help='Train class-conditional model', metavar='BOOL',              type=bool, default=False, show_default=True)
 @click.option('--arch',          help='Network architecture', metavar='ddpmpp|ncsnpp|adm',          type=click.Choice(['ddpmpp', 'ncsnpp', 'adm']), default='ddpmpp', show_default=True)
-@click.option('--precond',       help='Preconditioning & loss function', metavar='vp|ve|edm',       type=click.Choice(['vp', 've', 'edm', 'fedm']), default='edm', show_default=True)
+@click.option('--precond',       help='Preconditioning & loss function', metavar='vp|ve|edm',       type=click.Choice(['vp', 've', 'edm', 'dedm']), default='edm', show_default=True)
 
-@click.option('--r_mult',        help='r mult', metavar='FLOAT',                                    type=click.FloatRange(min=0, min_open=True), default=1, show_default=True)
-@click.option('--pow',           help='pow', metavar='FLOAT',                                       type=click.FloatRange(min=0, min_open=True), default=1, show_default=True)
+@click.option('--log_uniform',   help='Use log-uniform noise distribution', metavar='BOOL',         type=bool, default=False, show_default=True)
 
 # Hyperparameters.
 @click.option('--duration',      help='Training duration', metavar='MIMG',                          type=click.FloatRange(min=0, min_open=True), default=200, show_default=True)
@@ -136,11 +135,10 @@ def main(**kwargs):
     elif opts.precond == 'edm':
         c.network_kwargs.class_name = 'training.networks.EDMPrecond'
         c.loss_kwargs.class_name = 'training.loss.EDMLoss'
-    elif opts.precond == 'fedm':
+    elif opts.precond == 'dedm':
         c.network_kwargs.class_name = 'training.networks.EDMPrecond'
-        c.loss_kwargs.class_name = 'training.loss.FEDMLoss'
-        c.loss_kwargs.r_mult = opts.r_mult
-        c.loss_kwargs.pow = opts.pow
+        c.loss_kwargs.class_name = 'training.loss.DEDMLoss'
+        c.loss_kwargs.use_log_uniform = opts.log_uniform
     else:
         assert False
 

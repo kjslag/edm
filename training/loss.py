@@ -82,34 +82,29 @@ class EDMLoss:
 #----------------------------------------------------------------------------
 
 @persistence.persistent_class
-class FEDMLoss:
-    def __init__(self, P_mean=-1.2, P_std=1.2, sigma_data=0.5, r_mult=1.0, pow=1.0):
+class DEDMLoss:
+    def __init__(self, P_mean=-1.2, P_std=1.2, sigma_data=0.5,
+                 use_log_uniform=False, sigma_min=0.002, sigma_max=80):
         self.P_mean = P_mean
         self.P_std = P_std
         self.sigma_data = sigma_data
-
-        print(f'FEDM Loss with r_mult={r_mult}, pow={pow}')
-        self.r_mult = r_mult
-        self.pow = pow
+        self.use_log_uniform = use_log_uniform
+        self.sigma_min = sigma_min
+        self.sigma_max = sigma_max
 
     def __call__(self, net, images, labels=None, augment_pipe=None):
-        rnd_normal = torch.randn([images.shape[0], 1, 1, 1], device=images.device)
-        sigma = (rnd_normal * self.P_std + self.P_mean).exp()
+        if self.use_log_uniform:
+            rnd_uniform = torch.rand([images.shape[0]//2, 1, 1, 1], device=images.device)
+            sigma = self.sigma_min * ((self.sigma_max / self.sigma_min) ** rnd_uniform)
+        else:
+            rnd_normal = torch.randn([images.shape[0]//2, 1, 1, 1], device=images.device)
+            sigma = (rnd_normal * self.P_std + self.P_mean).exp()
+        sigma = torch.cat([sigma, -sigma], dim=0)
         weight = (sigma ** 2 + self.sigma_data ** 2) / (sigma * self.sigma_data) ** 2
         y, augment_labels = augment_pipe(images) if augment_pipe is not None else (images, None)
         n = torch.randn_like(y) * sigma
         D_yn = net(y + n, sigma, labels, augment_labels=augment_labels)
         loss = weight * ((D_yn - y) ** 2)
-
-        loss = loss.float()
-        loss = torch.fft.fft2(loss, norm='ortho')
-        r = self.r_mult * (sigma / self.sigma_data)**0.25
-        _, _, H, W = loss.shape
-        rk = lambda k, l: (r*l/torch.pi)*(k*torch.pi/l).sin() # ~ r * k
-        f = lambda l: 1 + rk(torch.arange(l, device=loss.device), l)
-        f2 = (f(H)[:, None] * f(W)) ** -self.pow
-        loss = f2 * loss / f2.sum()
-
         return loss
 
 #----------------------------------------------------------------------------
