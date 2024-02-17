@@ -106,8 +106,9 @@ class DEDMLoss:
         y, augment_labels = augment_pipe(images) if augment_pipe is not None else (images, None)
         n = torch.randn_like(y) * sigma
 
-        y = y.tile(2,1,1,1)
         sigma = sigma.tile(2,1,1,1)
+        weight = weight.tile(2,1,1,1)
+        y = y.tile(2,1,1,1)
         n = n.tile(2,1,1,1)
         if labels is not None:
             assert labels.shape[0] == B
